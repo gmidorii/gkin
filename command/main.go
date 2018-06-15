@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	gkfile = *flag.String("y", ".gkin.yml", "gkin job file")
+	gkfile := *flag.String("y", ".gkin.yml", "gkin job file")
 	flag.Parse()
 
 	gk, err := gkin.Parse(gkfile)

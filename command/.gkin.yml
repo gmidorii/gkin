@@ -1,0 +1,7 @@
+pipeline:
+  - name: build
+    image: alpine
+    commands:
+      - echo hi
+      - ls
+      - pwd
