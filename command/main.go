@@ -8,11 +8,14 @@ import (
 )
 
 func main() {
-	var arg gkin.Argument
-	arg.Gkin = *flag.String("y", ".gkin.yml", "gkin job file")
+	gkfile = *flag.String("y", ".gkin.yml", "gkin job file")
 	flag.Parse()
 
-	if err := gkin.Run(arg); err != nil {
+	gk, err := gkin.Parse(gkfile)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	if err := gkin.Run(gkin.Argument{Gkin: gk}); err != nil {
 		log.Fatalln(err)
 	}
 }

@@ -4,16 +4,12 @@ import "fmt"
 
 // Argument is cli arg definition
 type Argument struct {
-	Gkin string
+	Gkin Gkin
 }
 
 // Run is gkin strating
 func Run(arg Argument) error {
-	gkin, err := Parse(arg.Gkin)
-	if err != nil {
-		return err
-	}
-	name, err := Build(gkin)
+	name, err := Build(arg.Gkin)
 	if err != nil {
 		return err
 	}

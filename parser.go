@@ -25,6 +25,7 @@ func Parse(name string) (Gkin, error) {
 	if err != nil {
 		return gkin, err
 	}
+	defer in.Close()
 	decoder := yaml.NewDecoder(in)
 	err = decoder.Decode(&gkin)
 	return gkin, err
