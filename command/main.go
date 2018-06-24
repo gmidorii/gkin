@@ -15,7 +15,7 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	if err := gkin.Run(gkin.Argument{Gkin: gk}); err != nil {
+	if err := gkin.GkinRun(gkin.Argument{Gkin: gk}); err != nil {
 		log.Fatalln(err)
 	}
 }

@@ -16,6 +16,8 @@ type Pipe struct {
 	Image    string   `yaml:"image"`
 	Name     string   `yaml:"name"`
 	Commands []string `yaml:"commands"`
+	Script   string   `yaml:"script"`
+	Execute  []string `yaml:"execute"`
 }
 
 // Parse do parsing .gkin.yml file to struct

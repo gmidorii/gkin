@@ -16,6 +16,7 @@ import (
 	"github.com/moby/moby/client"
 )
 
+// DockerPayload is container pulling payload.
 type DockerPayload struct {
 	ID             string `json:"id"`
 	Status         string `json:"status"`
@@ -53,17 +54,26 @@ func Build(pipe Pipe) (string, error) {
 		fmt.Printf("%+v\n", payload)
 	}
 
+	return "", nil
+}
+
+// Run is docker container run.
+func Run(image, name string) error {
+	cli, err := client.NewEnvClient()
+	if err != nil {
+		return err
+	}
 	cport, err := nat.NewPort("tcp", "7777")
 	if err != nil {
-		return "", err
+		return err
 	}
 	// container config
 	cc := &container.Config{
-		Image: pipe.Image,
+		Image: image,
 		ExposedPorts: nat.PortSet{
 			cport: struct{}{},
 		},
-		Entrypoint: pipe.Commands,
+		// Entrypoint: pipe.Commands,
 	}
 	// host config
 	hc := &container.HostConfig{
@@ -74,25 +84,27 @@ func Build(pipe Pipe) (string, error) {
 	}
 
 	fmt.Println("Container create")
-	body, err := cli.ContainerCreate(ctx, cc, hc, &network.NetworkingConfig{}, pipe.Name)
+	ctx := context.Background()
+	body, err := cli.ContainerCreate(ctx, cc, hc, &network.NetworkingConfig{}, name)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	fmt.Println("Container start")
 	if err = cli.ContainerStart(ctx, body.ID, types.ContainerStartOptions{}); err != nil {
-		return "", err
+		return err
 	}
 
 	r, err := cli.ContainerLogs(ctx, body.ID, types.ContainerLogsOptions{ShowStdout: true})
 	if err != nil {
-		return "", err
+		return err
 	}
 	defer r.Close()
 	io.Copy(os.Stdout, r)
 
 	if _, err = cli.ContainerWait(ctx, body.ID); err != nil {
-		return "", err
+		return err
 	}
-	return "", nil
+
+	return nil
 }

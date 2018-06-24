@@ -8,7 +8,7 @@ type Argument struct {
 }
 
 // Run is gkin strating
-func Run(arg Argument) error {
+func GkinRun(arg Argument) error {
 	name, err := Build(arg.Gkin.Pipeline[0])
 	if err != nil {
 		return err
