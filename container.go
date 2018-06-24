@@ -1,10 +1,13 @@
 package gkin
 
 import (
+	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
+	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -12,6 +15,16 @@ import (
 	"github.com/docker/go-connections/nat"
 	"github.com/moby/moby/client"
 )
+
+type DockerPayload struct {
+	ID             string `json:"id"`
+	Status         string `json:"status"`
+	Progress       string `json:"progress"`
+	ProgressDetail struct {
+		Current uint16 `json:"current"`
+		Total   uint16 `json:"total"`
+	} `json:"progressDetail"`
+}
 
 // Build is docker container build.
 // return image name
@@ -22,8 +35,9 @@ func Build(pipe Pipe) (string, error) {
 	}
 
 	// pull
-	fmt.Println("Container pulling")
-	ctx := context.Background()
+	ctx, cancelFunc := context.WithTimeout(context.Background(), 300*time.Second)
+	defer cancelFunc()
+	fmt.Printf("Container Image pulling: %v\n", pipe.Image)
 	rp, err := cli.ImagePull(ctx, pipe.Image, types.ImagePullOptions{})
 	if err != nil {
 		return "", err
@@ -31,18 +45,15 @@ func Build(pipe Pipe) (string, error) {
 	defer rp.Close()
 
 	// wait
-	var s string
-	for {
-		n, err := fmt.Scanf("%s", &s)
-		if err != nil {
-			return "", err
-		}
-		if n == 0 {
-			break
-		}
+	fmt.Println("Waiting...")
+	payload := DockerPayload{}
+	scanner := bufio.NewScanner(rp)
+	for scanner.Scan() {
+		json.Unmarshal(scanner.Bytes(), &payload)
+		fmt.Printf("%+v\n", payload)
 	}
 
-	cport, err := nat.NewPort("http", "80")
+	cport, err := nat.NewPort("tcp", "7777")
 	if err != nil {
 		return "", err
 	}
@@ -62,15 +73,14 @@ func Build(pipe Pipe) (string, error) {
 		AutoRemove: true,
 	}
 
+	fmt.Println("Container create")
 	body, err := cli.ContainerCreate(ctx, cc, hc, &network.NetworkingConfig{}, pipe.Name)
 	if err != nil {
 		return "", err
 	}
+
 	fmt.Println("Container start")
 	if err = cli.ContainerStart(ctx, body.ID, types.ContainerStartOptions{}); err != nil {
-		return "", err
-	}
-	if _, err = cli.ContainerWait(ctx, body.ID); err != nil {
 		return "", err
 	}
 
@@ -79,7 +89,10 @@ func Build(pipe Pipe) (string, error) {
 		return "", err
 	}
 	defer r.Close()
-
 	io.Copy(os.Stdout, r)
+
+	if _, err = cli.ContainerWait(ctx, body.ID); err != nil {
+		return "", err
+	}
 	return "", nil
 }
